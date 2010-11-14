@@ -163,9 +163,9 @@ if '__main__' == __name__:
     parser = optparse.OptionParser(usage=usage)
 
     parser.add_option( '-a','--add', dest='add_host', action='store_true', help='Add/update a host to the STS cache')
-    parser.add_option( '-s','--include-subdomains', dest='include_subdomains',default=False, help='Include subdomains')
-    parser.add_option( '-m','--max-age', dest='max_age', default=365*24*60*60, help='Maximum age entry will be cached (seconds)')
     parser.add_option( '-d','--delete', dest='delete_host', action='store_true', help='Delete a given host from the STS cache')
+    parser.add_option( '-s','--include-subdomains', action='store_true', dest='include_subdomains',default=False, help='Include subdomains')
+    parser.add_option( '-m','--max-age', dest='max_age', default=365*24*60*60, help='Maximum age entry will be cached (seconds)')
     parser.add_option( '-p','--sts-cache-path', dest='path_override', default=None, help="Manually specify the path to Chrome/Chromium's TransportSecurity file")
     parser.add_option( '-v','--verbose', dest='verbosity',  default=2, help='Verbosity/debug level. 0 (errors only) - 3 (debug)')
     
