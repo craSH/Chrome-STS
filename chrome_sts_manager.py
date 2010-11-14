@@ -159,16 +159,24 @@ def debug(level, msg):
 
 if '__main__' == __name__:
     import optparse
-    parser = optparse.OptionParser()
+    usage = "usage: %prog [options] domain/hostname"
+    parser = optparse.OptionParser(usage=usage)
 
     parser.add_option( '-a','--add', dest='add_host', action='store_true', help='Add/update a host to the STS cache')
     parser.add_option( '-s','--include-subdomains', dest='include_subdomains',default=False, help='Include subdomains')
     parser.add_option( '-m','--max-age', dest='max_age', default=365*24*60*60, help='Maximum age entry will be cached (seconds)')
     parser.add_option( '-d','--delete', dest='delete_host', action='store_true', help='Delete a given host from the STS cache')
     parser.add_option( '-p','--sts-cache-path', dest='path_override', default=None, help="Manually specify the path to Chrome/Chromium's TransportSecurity file")
+    parser.add_option( '-v','--verbose', dest='verbosity',  default=2, help='Verbosity/debug level. 0 (errors only) - 3 (debug)')
     
     (options, args) = parser.parse_args()
+
+    if not len(args) > 0:
+        parser.print_help()
+        sys.exit(1)
+
     hostname = args[0]
+    DEBUG = int(options.verbosity)
     
     if options.add_host and options.delete_host:
         debug(0, "You can not simultaneously add and delete the same host!")
@@ -205,19 +213,11 @@ if '__main__' == __name__:
         csts.sts_delete_entry(hostname)
     else:
         # No add or delete, just query the cache for any domain given, if any
-        if len(args) > 0:
-            query_result = json.dumps(csts.get(hostname), indent=3)
-            if query_result and 'null' != query_result.lower():
-                display = "Query: %s\n\n" % repr(hostname)
-                display += '"%s": ' % hash_host(hostname)
-                display += query_result
-                print display
-            else:
-                print "No entry for %s" % repr(hostname)
+        query_result = json.dumps(csts.get(hostname), indent=3)
+        if query_result and 'null' != query_result.lower():
+            display = "Query: %s\n\n" % repr(hostname)
+            display += '"%s": ' % hash_host(hostname)
+            display += query_result
+            print display
         else:
-            parser.print_help()
-        
-
-
-
-
+            print "No entry for %s" % repr(hostname)
