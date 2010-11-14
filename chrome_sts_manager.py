@@ -191,6 +191,7 @@ if '__main__' == __name__:
             os.path.join(os.environ['HOME'], 'Library/Application Support/Google/Chrome/Default/TransportSecurity'),
             os.path.join(os.environ['HOME'], 'Library/Application Support/Google/Chrome/Default/StrictTransportSecurity'),
             os.path.join(os.environ['HOME'], '.config/chromium/Default/TransportSecurity'),
+            os.path.join(os.environ['HOME'], '.config/google-chrome/Default/TransportSecurity'),
         ]
         # Iterate over the path possibilities until we find one that appears to be a file.
         for path in sts_path_possibilities:
