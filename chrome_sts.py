@@ -16,17 +16,22 @@ debug_levels = {0: 'ERROR',
 
 DEBUG = 2
 
-class chrome_sts():
-    def __init__(self, sts_state_file=None):
+class chrome_sts(dict):
+    def __init__(self, sts_state_file=None, autocommit=False):
+        
+        self._sts_state_file = sts_state_file
+        
+        # Shall we write to disk immediately after any modifications?
+        self._autocommit = autocommit
+        
         # Load the json file into memory
         sts_state_json = dict()
-        self.sts_entries = dict()
-        
+                
         try:
-            sts_state_json = json.loads(open(sts_state_file, 'r').read())
+            sts_state_json = json.loads(open(self._sts_state_file, 'r').read())
         except Exception, ex:
             debug(0, "Failed to load STS State file %s (%s)" % (sts_state_file, ex))
-            sys.exit(1)
+            raise
             
         for k, v in sts_state_json.items():
             entry = sts_entry(k,
@@ -35,18 +40,18 @@ class chrome_sts():
                               include_subdomains = v['include_subdomains'],
                               mode = v['mode']
                               )
-            self.sts_entries.update(entry.getDict())
+            self.update(entry)
 
     def get(self, host):
         hashed_host = hashHost(host)
         debug(3, "Host hash: %s" % hashed_host)
-        if self.sts_entries.has_key(hashed_host):
-            return self.sts_entries[hashed_host]
+        if self.has_key(hashed_host):
+            return self[hashed_host]
         else:
             return None
 
-    def add(self, host, max_age=365*24*60*60, include_subdomains=False, mode='strict'):
-        """Add a new entry to the sts object"""
+    def stsAddEntry(self, host, max_age=365*24*60*60, include_subdomains=False, mode='strict'):
+        """Add a new entry to the STS object"""
         hashed_hostname = hashHost(host)
         cur_time = time.time()
         cur_time_s = "%.6f" % (cur_time)
@@ -57,8 +62,27 @@ class chrome_sts():
                               include_subdomains=include_subdomains,
                               mode=mode)
 
-        self.sts_entries.update(new_entry)
-        debug(2, "Added/updated STS Entry for %s: %s" % (repr(host), json.dumps(new_entry.getDict())))
+        self.update(new_entry)
+        debug(2, "Added/updated STS Entry for %s: %s" % (repr(host), json.dumps(new_entry)))
+        
+        if self._autocommit:
+            debug(2, "Executing autocommit of STS state file")
+            self.writeStateFile()
+
+    def writeStateFile(self):
+        """Write out the contents of this STS object to the STS state file"""
+        sts_state_file_text = json.dumps(self, indent=3)
+        fh = None
+        try:
+            fh = open(self._sts_state_file, 'w')
+            fh.write(sts_state_file_text)
+            fh.flush()
+            debug(2, "Sucessfully wrote STS state to file %s" % repr(self._sts_state_file))
+        except Exception, ex:
+            debug(0, "Failed to write STS State file: %s" % ex)
+            raise
+        finally:
+            fh.close()
 
 class sts_entry(dict):
     """
@@ -117,7 +141,13 @@ def debug(level, msg):
 
 if '__main__' == __name__:
     path = os.path.join(os.environ['HOME'], 'Library/Application Support/Google/Chrome/Default/TransportSecurity')
-    csts = chrome_sts(sts_state_file=path)
+
+    csts = None
+    try:
+        csts = chrome_sts(sts_state_file=path)
+    except Exception, ex:
+        # Should already be displaying error messages anywhere something is thrown up here
+        sys.exit(1)
 
     result = csts.get(sys.argv[1])
     if result:
