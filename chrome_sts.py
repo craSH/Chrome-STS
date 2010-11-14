@@ -12,7 +12,7 @@ class chrome_sts():
     sts_state_file = os.path.join(os.environ['HOME'], 'Library/Application Support/Google/Chrome/Default/TransportSecurity')
     sts_state_json = None
 
-    def hostToLabels(host):
+    def hostToLabels(self, host):
         host = host.strip()
 
         labels = tuple(host.split('.'))
@@ -22,30 +22,36 @@ class chrome_sts():
 
         return labels
 
-    def canonicalizeHost(host):
-        labels = hostToLabels(host)
+    def canonicalizeHost(self, host):
+        labels = self.hostToLabels(host)
 
         canonicalized_host = ''
         for label in labels:
             label_len = len(label)
-            canonicalized_host += struct.pack('b', label_len)
+            canonicalized_host += chr(label_len)
             canonicalized_host += label
-            canonicalized_host += '\0'
+
+        # Null-terminate
+        canonicalized_host += '\0'
 
         return canonicalized_host
 
-    def loadSTS():
-        sts_state_json = json.loads(open(sts_state_file, 'r').read())
+    def loadSTS(self):
+        self.sts_state_json = json.loads(open(self.sts_state_file, 'r').read())
 
-    def lookup_host(host):
-        canonicalized_host = canonicalizeHost(host)
-        hashed_host = hashlib.sha256(canonicalized_host).digest().encode('base64')
-        if sts_state_json.has_key(hashed_host):
-            return sts_state_json[hashed_host]
+    def lookup_host(self, host):
+        canonicalized_host = self.canonicalizeHost(host)
+        hashed_host = hashlib.sha256(canonicalized_host).digest().encode('base64').strip()
+        if self.sts_state_json.has_key(hashed_host):
+            return self.sts_state_json[hashed_host]
         else:
             return None
 
 if '__main__' == __name__:
     csts = chrome_sts()
     csts.loadSTS()
-    print csts.lookup_host(sys.argv[1])
+    result = csts.lookup_host(sys.argv[1])
+    if result:
+        print result
+    else:
+        print "No entry for %s" % sys.argv[1]
