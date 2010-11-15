@@ -34,3 +34,20 @@ This adds facebook.com and all subdomains to Chrome's STS cache for one year. Th
     INFO: Executing autocommit of STS state file
     INFO: Sucessfully wrote STS state to file '/Users/crash/Library/Application Support/Google/Chrome/Default/TransportSecurity'
     
+# chrome_sts_reverse.py
+## A little proof of concept script to reveal hosts stored in STS cache (which are SHA256 hashed)
+The hashing of hostnames in Chrome's STS cache is not useful from a security perspective, it's trivial to look these up based on your own browsing history and the Alexa top 1,000,000 sites list. That is what this script does.
+This is not amazing by any means, most users will have all their STS entries present in the normal browser history, so I don't see that there's much of a leak here. It's really just an annoyance when trying to deal with the STS cache :)
+
+### Example usage (You must have the Alexa top 1m sites file downloaded + unzipped)
+    $ python chrome_sts_reverse.py
+    # Chrome/Chromium STS Privacy Leak PoC
+    # Look up STS hosts based on precomputed hashes of your own browsing history + Alexa Top 1,000,000 domains
+    Matched STS host entries:
+        calomel.org, Last Accessed: 1289002307.810874
+        neg9.org, Last Accessed: 1289003617.943210
+        www.noisebridge.net, Last Accessed: 1289731341.660200
+    
+    Unmatched STS host hashes:
+        vnGyNm8Ca0otQ0Xeju02z1ytnWf4cDxFBqUcQJ77lpg=, Last Accessed: 1289777331.593507
+        rKLF0Hae9LVGc224j1/caNj/mw10uyYWv7QkStDh9gU=, Last Accessed: 1288843191.608916
