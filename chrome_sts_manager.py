@@ -156,6 +156,7 @@ class StsEntry(dict):
 def canonicalize_host(host):
     """Return an RFC3490 compatible canonicalized DNS hostname. Adapated from Scapy source."""
     temp = [label[:63] for label in host.split(".")] # Truncate labels that cannont be encoded (more than 63 bytes..)
+    temp = filter(lambda x: len(x) > 0, temp) # Remove zero-length labels due to extraneous dots in the original domain
     temp = map(lambda x: chr(len(x)) + x, temp)
     temp = ''.join(temp)
     if temp[-1] != "\x00":
