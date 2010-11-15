@@ -27,7 +27,28 @@ class ChromeSTS(dict):
         which is a list of STS entries. It's a JSON dictionary of entries (also dictionaries)
         on disk, so this just extends Python's dictionary class
         """
-        self._sts_state_file = sts_state_file
+
+        # The path of the STS state file
+        self._sts_state_file = None
+
+        if sts_state_file:
+            # If an explicit file path was provided, use that
+            self._sts_state_file = sts_state_file
+        else:
+            # If no file path was provided, look in common locations
+            sts_path_possibilities = [
+                os.path.join(os.environ['HOME'], 'Library/Application Support/Google/Chrome/Default/TransportSecurity'),
+                os.path.join(os.environ['HOME'], 'Library/Application Support/Google/Chrome/Default/StrictTransportSecurity'),
+                os.path.join(os.environ['HOME'], '.config/chromium/Default/TransportSecurity'),
+                os.path.join(os.environ['HOME'], '.config/google-chrome/Default/TransportSecurity'),
+            ]
+            # Iterate over the path possibilities until we find one that appears to be a file.
+            for path in sts_path_possibilities:
+                if os.path.isfile(path):
+                    self._sts_state_file = path
+                    break
+
+            assert self._sts_state_file, "Failed to find a suitable TransportSecurity file"
         
         # Shall we write to disk immediately after any modifications?
         self._autocommit = autocommit
@@ -183,21 +204,7 @@ if '__main__' == __name__:
         sys.exit(1)
 
     # Set the path to the user provided one if given, else try and find the file automagically
-    sts_cache_path = None
-    if options.path_override:
-        sts_cache_path = options.path_override
-    else:
-        sts_path_possibilities = [
-            os.path.join(os.environ['HOME'], 'Library/Application Support/Google/Chrome/Default/TransportSecurity'),
-            os.path.join(os.environ['HOME'], 'Library/Application Support/Google/Chrome/Default/StrictTransportSecurity'),
-            os.path.join(os.environ['HOME'], '.config/chromium/Default/TransportSecurity'),
-            os.path.join(os.environ['HOME'], '.config/google-chrome/Default/TransportSecurity'),
-        ]
-        # Iterate over the path possibilities until we find one that appears to be a file.
-        for path in sts_path_possibilities:
-            if os.path.isfile(path):
-                sts_cache_path = path
-                break
+    sts_cache_path = options.path_override if options.path_override else None
 
     # Create the Chrome STS Object that will hold all the STS entries from disk, and ones we add/delete
     csts = None
