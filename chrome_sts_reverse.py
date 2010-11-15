@@ -50,7 +50,7 @@ finally:
 
 # Add in Alexa top 1million domains for completeness
 alexa_1m_file = open('top-1m.csv', 'r')
-alexa_domains = map(lambda x: x.split(',', 1)[1].strip(), alexa_1m_file.readlines())
+alexa_domains = map(lambda x: x.split(',', 1)[1].strip().split('/', 1)[0], alexa_1m_file.readlines())
 
 host_list = set(history_domains + alexa_domains)
 
@@ -59,24 +59,10 @@ for host in host_list:
     hashed_hostname = hash_host(host)
     host_dict[hashed_hostname] = host
 
-# Load up STS data
-sts_cache_path = None
-sts_path_possibilities = [
-    os.path.join(os.environ['HOME'], 'Library/Application Support/Google/Chrome/Default/TransportSecurity'),
-    os.path.join(os.environ['HOME'], 'Library/Application Support/Google/Chrome/Default/StrictTransportSecurity'),
-    os.path.join(os.environ['HOME'], '.config/chromium/Default/TransportSecurity'),
-    os.path.join(os.environ['HOME'], '.config/google-chrome/Default/TransportSecurity'),
-]
-# Iterate over the path possibilities until we find one that appears to be a file.
-for path in sts_path_possibilities:
-    if os.path.isfile(path):
-        sts_cache_path = path
-        break
-
 # Create the Chrome STS Object that will hold all the STS entries from disk, and ones we add/delete
 csts = None
 try:
-    csts = ChromeSTS(sts_state_file=sts_cache_path, autocommit=True)
+    csts = ChromeSTS(autocommit=True)
 except Exception, ex:
     raise
 
