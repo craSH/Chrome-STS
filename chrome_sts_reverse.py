@@ -8,6 +8,7 @@
 
 import os
 import sys
+import time
 import tempfile
 import shutil
 from pprint import pprint
@@ -67,18 +68,21 @@ except Exception, ex:
     raise
 
 for hashed_host, infodict in csts.items():
+    # Convert seconds since epoch to human readable string
+    created = time.ctime(infodict['created'])
+
     if host_dict.has_key(hashed_host):
-        matched_entries.append((host_dict[hashed_host], infodict['created']))
+        matched_entries.append((created, host_dict[hashed_host]))
     else:
-        unmatched_entries.append((hashed_host, infodict['created']))
+        unmatched_entries.append((created, hashed_host))
 
 print "Matched STS host entries:"
 
 for match in matched_entries:
-    print "    %s, Last Accessed: %f" % match
+    print "    Accessed: %s - %s" % match
 
 print ""
 print "Unmatched STS host hashes:"
 
 for unknown in unmatched_entries:
-    print "    %s, Last Accessed: %f" % unknown
+    print "    Accessed: %s - %s" % unknown
