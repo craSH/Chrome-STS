@@ -43,6 +43,8 @@ This is not amazing by any means, most users will have all their STS entries pre
     $ python chrome_sts_reverse.py
     # Chrome/Chromium STS Privacy Leak PoC
     # Look up STS hosts based on precomputed hashes of your own browsing history + Alexa Top 1,000,000 domains
+    + Downloading http://s3.amazonaws.com/alexa-static/top-1m.csv.zip ...
+    + Hashing and caching Alexa top 1,000,000 domain hashes, this may take about a minute...
     Matched STS host entries:
         Accessed: Fri Nov  5 17:11:47 2010 - calomel.org
         Accessed: Fri Nov  5 17:33:37 2010 - neg9.org

