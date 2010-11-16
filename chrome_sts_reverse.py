@@ -51,13 +51,16 @@ except Exception, ex:
 finally:
     os.unlink(temp)
 
-# Add in Alexa top 1million domains for completeness
-try:
-    alexa_1m_file = open(alexa_file, 'r')
-    alexa_domains = map(lambda x: x.split(',', 1)[1].strip().split('/', 1)[0], alexa_1m_file.readlines())
-except IOError, ex:
-    print >>sys.stderr, "You do not have the Alexa top 1,000,000 sites file (%s) - download and unzip here for better results: %s" % (alexa_file, alexa_url)
-    print >>sys.stderr, "Continuing with data collected only from Chrome browsing history, expect a potentially smaller set of results..."
+# Add in Alexa top 1million domains for completeness, unless -n flag given
+if len(sys.argv) > 1 and '-n' != sys.argv[1]:
+    try:
+        alexa_1m_file = open(alexa_file, 'r')
+        alexa_domains = map(lambda x: x.split(',', 1)[1].strip().split('/', 1)[0], alexa_1m_file.readlines())
+    except IOError, ex:
+        print >>sys.stderr, "You do not have the Alexa top 1,000,000 sites file (%s) - download and unzip here for better results: %s" % (alexa_file, alexa_url)
+        print >>sys.stderr, "Continuing with data collected only from Chrome browsing history, expect a potentially smaller set of results..."
+else:
+    print "User provided -n flag, continuing with data collected only from Chrome browsing history, expect a potentially smaller set of results..."
 
 host_list = set(history_domains + alexa_domains)
 
