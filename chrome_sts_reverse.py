@@ -7,13 +7,25 @@
 # Copyleft 2010 Ian Gallagher <crash@neg9.org>
 
 import os, sys, time, tempfile, shutil, cPickle, urllib
-from sqlite3 import dbapi2 as sqlite
 from cStringIO import StringIO
 from zipfile import ZipFile
 
+# Try importing sqlite module, different on Linux/OSX/who knows..
+try:
+    from sqlite3 import dbapi2 as sqlite
+except ImportError, ex:
+    from pysqlite import dbapi2 as sqlite
+except ImportError, ex:
+    # Arr, I give up! You can fix this as appropriate for your system ;)
+    raise
+
 from chrome_sts_manager import ChromeSTS, hash_host
 
-hist_db = os.path.join(os.environ['HOME'], 'Library/Application Support/Chromium/Default/History')
+hist_path_possibilities = [
+    os.path.join(os.environ['HOME'], 'Library/Application Support/Google/Chrome/Default/History'),
+    os.path.join(os.environ['HOME'], '.config/chromium/Default/History'),
+    os.path.join(os.environ['HOME'], '.config/google-chrome/Default/History'),
+]
 alexa_file = 'top-1m.csv'
 alexa_file_pickle = 'top-1m_hashed.pickle'
 alexa_url = 'http://s3.amazonaws.com/alexa-static/top-1m.csv.zip'
@@ -45,7 +57,18 @@ if '__main__' == __name__:
 
     # Copy DB to a temp file so we can work on it while Chrome is running (and the db is locked)
     temp = tempfile.mktemp('.sqlite')
-    shutil.copy(hist_db, temp)
+    found_history = False
+    for choice in hist_path_possibilities:
+        try:
+            shutil.copy(choice, temp)
+            found_history = True
+            continue
+        except IOError, ex:
+            pass
+
+    if not found_history:
+        print >>sys.stderr, "Unable to locate Chrome/Chromium History file..."
+        sys.exit(1)
 
     history_domains = []
     alexa_domains = []
