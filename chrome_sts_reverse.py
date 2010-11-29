@@ -125,11 +125,16 @@ if '__main__' == __name__:
 
     print "Matched STS host entries:"
 
-    for match in matched_entries:
-        print "    Accessed: %s - %s" % match
+    if matched_entries:
+        for match in matched_entries:
+            print "    Accessed: %s - %s" % match
+    else:
+        print "    No matched STS host entries found."
 
-    print ""
-    print "Unmatched STS host hashes:"
+    print "\nUnmatched STS host hashes:"
 
-    for unknown in unmatched_entries:
-        print "    Accessed: %s - %s" % unknown
+    if unmatched_entries:
+        for unknown in unmatched_entries:
+            print "    Accessed: %s - %s" % unknown
+    else:
+        print "    No unmatched STS host entries found."
