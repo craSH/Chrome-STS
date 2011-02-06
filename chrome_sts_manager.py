@@ -84,7 +84,7 @@ class ChromeSTS(dict):
         """Add a new entry to the STS object"""
         hashed_hostname = hash_host(host)
         cur_time = time.time()
-        expiration = cur_time + max_age
+        expiration = cur_time + float(max_age)
         new_entry = StsEntry(hashed_hostname,
                               created=cur_time,
                               expiry=expiration,

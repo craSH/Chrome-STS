@@ -2,4 +2,5 @@
 *.pyo
 *.swp
 *~
-top-1m.csv
+*.csv
+*.pickle

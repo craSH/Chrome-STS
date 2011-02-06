@@ -85,8 +85,10 @@ if '__main__' == __name__:
         cursor.execute('SELECT url FROM urls')
         result = cursor.fetchall()
         url_list = map(lambda x: x[0], result)
+        url_list = filter(lambda x: x.count('/') > 1 and x.count(':') > 0, url_list)
         history_domains = map(lambda x: x.split('/')[2], url_list)
         history_domains = map(lambda x: x.split(':')[0], history_domains)
+        history_domains = filter(lambda x: len(x) > 0, history_domains)
 
     except Exception, ex:
         raise
