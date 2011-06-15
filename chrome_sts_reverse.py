@@ -22,9 +22,10 @@ except ImportError, ex:
 from chrome_sts_manager import ChromeSTS, hash_host
 
 hist_path_possibilities = [
-    os.path.join(os.environ['HOME'], 'Library/Application Support/Google/Chrome/Default/History'),
-    os.path.join(os.environ['HOME'], '.config/chromium/Default/History'),
-    os.path.join(os.environ['HOME'], '.config/google-chrome/Default/History'),
+    os.path.join(os.environ['HOME'], 'Library/Application Support/Google/Chrome/Default/History'),      # OS X Chrome official
+    os.path.join(os.environ['HOME'], 'Library/Application Support/Chromium/Default/History'),           # OS X Chromium
+    os.path.join(os.environ['HOME'], '.config/chromium/Default/History'),                               # *nix Chromium
+    os.path.join(os.environ['HOME'], '.config/google-chrome/Default/History'),                          # *nix Chrome official
 ]
 alexa_file = 'top-1m.csv'
 alexa_file_pickle = 'top-1m_hashed.pickle'

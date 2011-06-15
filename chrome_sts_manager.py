@@ -37,10 +37,12 @@ class ChromeSTS(dict):
         else:
             # If no file path was provided, look in common locations
             sts_path_possibilities = [
-                os.path.join(os.environ['HOME'], 'Library/Application Support/Google/Chrome/Default/TransportSecurity'),
-                os.path.join(os.environ['HOME'], 'Library/Application Support/Google/Chrome/Default/StrictTransportSecurity'),
-                os.path.join(os.environ['HOME'], '.config/chromium/Default/TransportSecurity'),
-                os.path.join(os.environ['HOME'], '.config/google-chrome/Default/TransportSecurity'),
+                os.path.join(os.environ['HOME'], 'Library/Application Support/Google/Chrome/Default/TransportSecurity'),        # OS X Official Chrome
+                os.path.join(os.environ['HOME'], 'Library/Application Support/Google/Chrome/Default/StrictTransportSecurity'),  # OS X Official Chrome
+                os.path.join(os.environ['HOME'], 'Library/Application Support/Chromium/Default/TransportSecurity'),             # OS X Chromium
+                os.path.join(os.environ['HOME'], 'Library/Application Support/Chromium/Default/StrictTransportSecurity'),       # OS X Chromium
+                os.path.join(os.environ['HOME'], '.config/chromium/Default/TransportSecurity'),                                 # *nix Chromium
+                os.path.join(os.environ['HOME'], '.config/google-chrome/Default/TransportSecurity'),                            # *nix Official Chrome
             ]
             # Iterate over the path possibilities until we find one that appears to be a file.
             for path in sts_path_possibilities:
