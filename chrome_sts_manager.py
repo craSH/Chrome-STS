@@ -39,6 +39,7 @@ class ChromeSTS(dict):
             sts_path_possibilities = [
                 os.path.join(os.environ['HOME'], 'Library/Application Support/Google/Chrome/Default/TransportSecurity'),        # OS X Official Chrome
                 os.path.join(os.environ['HOME'], 'Library/Application Support/Google/Chrome/Default/StrictTransportSecurity'),  # OS X Official Chrome
+                os.path.join(os.environ['HOME'], 'Library/Application Support/Google/Chrome Canary/Default/TransportSecurity'), # OS X Chrome Canary
                 os.path.join(os.environ['HOME'], 'Library/Application Support/Chromium/Default/TransportSecurity'),             # OS X Chromium
                 os.path.join(os.environ['HOME'], 'Library/Application Support/Chromium/Default/StrictTransportSecurity'),       # OS X Chromium
                 os.path.join(os.environ['HOME'], '.config/chromium/Default/TransportSecurity'),                                 # *nix Chromium

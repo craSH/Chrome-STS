@@ -23,6 +23,7 @@ from chrome_sts_manager import ChromeSTS, hash_host
 
 hist_path_possibilities = [
     os.path.join(os.environ['HOME'], 'Library/Application Support/Google/Chrome/Default/History'),      # OS X Chrome official
+    os.path.join(os.environ['HOME'], 'Library/Application Support/Google/Chrome Canary/Default/History'), # OS X Chrome Canary
     os.path.join(os.environ['HOME'], 'Library/Application Support/Chromium/Default/History'),           # OS X Chromium
     os.path.join(os.environ['HOME'], '.config/chromium/Default/History'),                               # *nix Chromium
     os.path.join(os.environ['HOME'], '.config/google-chrome/Default/History'),                          # *nix Chrome official
