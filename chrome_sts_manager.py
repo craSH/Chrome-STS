@@ -52,19 +52,19 @@ class ChromeSTS(dict):
                     break
 
             assert self._sts_state_file, "Failed to find a suitable TransportSecurity file"
-        
+
         # Shall we write to disk immediately after any modifications?
         self._autocommit = autocommit
-        
+
         # Load the json file into memory
         sts_state_json = dict()
-                
+
         try:
             sts_state_json = json.loads(open(self._sts_state_file, 'r').read())
         except Exception, ex:
             debug(0, "Failed to load STS State file %s (%s)" % (sts_state_file, ex))
             raise
-            
+
         for k, v in sts_state_json.items():
             entry = StsEntry(k,
                               created = v['created'],
@@ -96,11 +96,11 @@ class ChromeSTS(dict):
 
         self.update(new_entry)
         debug(2, "Added/updated STS Entry for %s: %s" % (repr(host), json.dumps(new_entry)))
-        
+
         if self._autocommit:
             debug(2, "Executing autocommit of STS state file")
             self.write_state_file()
-            
+
     def sts_delete_entry(self, host):
         """Delete a given host from the STS cache"""
         hashed_hostname = hash_host(host)
@@ -110,7 +110,7 @@ class ChromeSTS(dict):
         except KeyError, ex:
             debug(0, "Unable to find entry in STS cache for %s (%s)" % (repr(hostname), hashed_hostname))
             return
-            
+
         if self._autocommit:
             debug(2, "Executing autocommit of STS state file")
             self.write_state_file()
@@ -152,7 +152,7 @@ class StsEntry(dict):
             'include_subdomains': include_subdomains,
             'mode': mode
         }
-        
+
         # Set ourselves
         self.__setitem__(hash, attributes)
 
@@ -167,15 +167,15 @@ def canonicalize_host(host):
 
     debug(3, "Canonicalized hostname: %s" % repr(temp))
     return temp
-    
+
 def hash_host(host):
     """Generate a hash suitable for use in Chrome STS cache based on a human-readable hostname"""
     canonicalized_host = canonicalize_host(host)
     hashed_host = hashlib.sha256(canonicalized_host).digest()
     hashed_host = hashed_host.encode('base64').strip()
-    
+
     return hashed_host
-    
+
 def debug(level, msg):
     """Print message based on debug level"""
     if DEBUG >= level:
@@ -193,7 +193,7 @@ if '__main__' == __name__:
     parser.add_option( '-m','--max-age', dest='max_age', default=365*24*60*60, help='Maximum age entry will be cached (seconds)')
     parser.add_option( '-p','--sts-cache-path', dest='path_override', default=None, help="Manually specify the path to Chrome/Chromium's TransportSecurity file")
     parser.add_option( '-v','--verbose', dest='verbosity',  default=2, help='Verbosity/debug level. 0 (errors only) - 3 (debug)')
-    
+
     (options, args) = parser.parse_args()
 
     if not len(args) > 0:
@@ -202,7 +202,7 @@ if '__main__' == __name__:
 
     hostname = args[0]
     DEBUG = int(options.verbosity)
-    
+
     if options.add_host and options.delete_host:
         debug(0, "You can not simultaneously add and delete the same host!")
         sys.exit(1)
