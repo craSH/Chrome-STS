@@ -5,6 +5,9 @@
 # Requires a restart of Chrome to load the updated file.
 # 
 # Copyleft 2010 Ian Gallagher <crash@neg9.org>
+#
+# 2013 Dop
+# Attempted Patch to new STS JSON structure, skipped adding custom spki entries for now.
 
 import os
 import sys
@@ -68,9 +71,12 @@ class ChromeSTS(dict):
         for k, v in sts_state_json.items():
             entry = StsEntry(k,
                               created = v['created'],
+                              dynamic_spki_hashes_expiry = v['dynamic_spki_hashes_expiry'],
                               expiry = v['expiry'],
-                              include_subdomains = v['include_subdomains'],
-                              mode = v['mode']
+                              mode = v['mode'],
+                              pkp_include_subdomains = v['pkp_include_subdomains'],
+                              static_spki_hashes = v['static_spki_hashes'],
+                              sts_include_subdomains = v['sts_include_subdomains']
                               )
             self.update(entry)
 
@@ -83,16 +89,20 @@ class ChromeSTS(dict):
         else:
             return None
 
-    def sts_add_entry(self, host, max_age=365*24*60*60, include_subdomains=False, mode='strict'):
+    def sts_add_entry(self, host, max_age=365*24*60*60, static_spki_hashes=[], dynamic_spki_hashes_expiry=0.0, sts_include_subdomains=False, pkp_include_subdomains=False, mode="force-https"):
         """Add a new entry to the STS object"""
         hashed_hostname = hash_host(host)
         cur_time = time.time()
         expiration = cur_time + float(max_age)
         new_entry = StsEntry(hashed_hostname,
                               created=cur_time,
+                              dynamic_spki_hashes_expiry=dynamic_spki_hashes_expiry,
                               expiry=expiration,
-                              include_subdomains=include_subdomains,
-                              mode=mode)
+                              mode=mode,
+                              pkp_include_subdomains=pkp_include_subdomains,
+                              static_spki_hashes=static_spki_hashes,
+                              sts_include_subdomains=sts_include_subdomains
+                              )
 
         self.update(new_entry)
         debug(2, "Added/updated STS Entry for %s: %s" % (repr(host), json.dumps(new_entry)))
@@ -135,22 +145,28 @@ class StsEntry(dict):
     Class that represents a single entry in the Chrome STS list. Again, this class extends
     Python's dictionary class.
     Example from file:
-        "j6md0fxp6QYNP8B0wy4GhW10q925k2nmAkN+LQsMG6U=": {
-           "created": 1288843191.608916,
-           "expiry": 1320710325.353056,
-           "include_subdomains": false,
-           "mode": "strict"
-        }
+    "0oFmTXCSNYAd9MO5I1CTIOeB2pfYsTCq1thfr+zV3n8=": {
+      "created": 1379894905.975116,
+      "dynamic_spki_hashes_expiry": 0.0,
+      "expiry": 1411430905.975116,
+      "mode": "force-https",
+      "pkp_include_subdomains": true,
+      "static_spki_hashes": [  ],
+      "sts_include_subdomains": true
+    }
     """
-    def __init__(self, hash, created=None, expiry=None, include_subdomains=False, mode="Strict"):
+    def __init__(self, hash, created=None, dynamic_spki_hashes_expiry=0.0, expiry=None, mode="force-https", pkp_include_subdomains=False, static_spki_hashes=[], sts_include_subdomains=False,):
         super(StsEntry, self).__init__()
 
         # Attributes which will be the key for our hash
         attributes = {
             'created': created,
+            'dynamic_spki_hashes_expiry': dynamic_spki_hashes_expiry,
             'expiry': expiry,
-            'include_subdomains': include_subdomains,
-            'mode': mode
+            'mode': mode,
+            'pkp_include_subdomains': pkp_include_subdomains,
+            'static_spki_hashes': static_spki_hashes,
+            'sts_include_subdomains': sts_include_subdomains
         }
 
         # Set ourselves
@@ -189,7 +205,8 @@ if '__main__' == __name__:
 
     parser.add_option( '-a','--add', dest='add_host', action='store_true', help='Add/update a host to the STS cache')
     parser.add_option( '-d','--delete', dest='delete_host', action='store_true', help='Delete a given host from the STS cache')
-    parser.add_option( '-s','--include-subdomains', action='store_true', dest='include_subdomains',default=False, help='Include subdomains')
+    parser.add_option( '-s','--sts-include-subdomains', action='store_true', dest='sts_include_subdomains',default=False, help='STS include subdomains')
+    parser.add_option( '-k','--pkp-include-subdomains', action='store_true', dest='pkp_include_subdomains',default=False, help='PKP include subdomains')   
     parser.add_option( '-m','--max-age', dest='max_age', default=365*24*60*60, help='Maximum age entry will be cached (seconds)')
     parser.add_option( '-p','--sts-cache-path', dest='path_override', default=None, help="Manually specify the path to Chrome/Chromium's TransportSecurity file")
     parser.add_option( '-v','--verbose', dest='verbosity',  default=2, help='Verbosity/debug level. 0 (errors only) - 3 (debug)')
@@ -220,7 +237,7 @@ if '__main__' == __name__:
 
     # Figure out what to do
     if options.add_host:
-        csts.sts_add_entry(hostname, max_age=options.max_age, include_subdomains=options.include_subdomains)
+        csts.sts_add_entry(hostname, max_age=options.max_age, sts_include_subdomains=options.sts_include_subdomains, pkp_include_subdomains=options.pkp_include_subdomains)
     elif options.delete_host:
         csts.sts_delete_entry(hostname)
     else:
