@@ -120,20 +120,12 @@ if '__main__' == __name__:
 
     for hashed_host, infodict in csts.items():
         # Convert seconds since epoch to human readable string
-        created = time.ctime(infodict['created'])
+        sts_observed = time.ctime(infodict['sts_observed'])
 
         if host_dict.has_key(hashed_host):
-            matched_entries.append((created, host_dict[hashed_host]))
+            matched_entries.append((sts_observed, host_dict[hashed_host]))
         else:
-            unmatched_entries.append((created, hashed_host))
-
-    print "Matched STS host entries:"
-
-    if matched_entries:
-        for match in matched_entries:
-            print "    Accessed: %s - %s" % match
-    else:
-        print "    No matched STS host entries found."
+            unmatched_entries.append((sts_observed, hashed_host))
 
     print "\nUnmatched STS host hashes:"
 
@@ -142,3 +134,11 @@ if '__main__' == __name__:
             print "    Accessed: %s - %s" % unknown
     else:
         print "    No unmatched STS host entries found."
+
+    print "Matched STS host entries:"
+
+    if matched_entries:
+        for match in matched_entries:
+            print "    Accessed: %s - %s" % match
+    else:
+        print "    No matched STS host entries found."

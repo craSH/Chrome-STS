@@ -70,13 +70,13 @@ class ChromeSTS(dict):
 
         for k, v in sts_state_json.items():
             entry = StsEntry(k,
-                              created = v['created'],
-                              dynamic_spki_hashes_expiry = v['dynamic_spki_hashes_expiry'],
-                              expiry = v['expiry'],
-                              mode = v['mode'],
-                              pkp_include_subdomains = v['pkp_include_subdomains'],
-                              static_spki_hashes = v['static_spki_hashes'],
-                              sts_include_subdomains = v['sts_include_subdomains']
+                              sts_observed = sts_state_json.get('sts_observed'),
+                              dynamic_spki_hashes_expiry = sts_state_json.get('dynamic_spki_hashes_expiry'),
+                              expiry = sts_state_json.get('expiry'),
+                              mode = sts_state_json.get('mode'),
+                              pkp_include_subdomains = sts_state_json.get('pkp_include_subdomains'),
+                              static_spki_hashes = sts_state_json.get('static_spki_hashes'),
+                              sts_include_subdomains = sts_state_json.get('sts_include_subdomains'),
                               )
             self.update(entry)
 
@@ -95,7 +95,7 @@ class ChromeSTS(dict):
         cur_time = time.time()
         expiration = cur_time + float(max_age)
         new_entry = StsEntry(hashed_hostname,
-                              created=cur_time,
+                              sts_observed=cur_time,
                               dynamic_spki_hashes_expiry=dynamic_spki_hashes_expiry,
                               expiry=expiration,
                               mode=mode,
@@ -146,7 +146,7 @@ class StsEntry(dict):
     Python's dictionary class.
     Example from file:
     "0oFmTXCSNYAd9MO5I1CTIOeB2pfYsTCq1thfr+zV3n8=": {
-      "created": 1379894905.975116,
+      "sts_observed": 1379894905.975116,
       "dynamic_spki_hashes_expiry": 0.0,
       "expiry": 1411430905.975116,
       "mode": "force-https",
@@ -155,12 +155,12 @@ class StsEntry(dict):
       "sts_include_subdomains": true
     }
     """
-    def __init__(self, hash, created=None, dynamic_spki_hashes_expiry=0.0, expiry=None, mode="force-https", pkp_include_subdomains=False, static_spki_hashes=[], sts_include_subdomains=False,):
+    def __init__(self, hash, sts_observed=None, dynamic_spki_hashes_expiry=0.0, expiry=None, mode="force-https", pkp_include_subdomains=False, static_spki_hashes=[], sts_include_subdomains=False,):
         super(StsEntry, self).__init__()
 
         # Attributes which will be the key for our hash
         attributes = {
-            'created': created,
+            'sts_observed': sts_observed,
             'dynamic_spki_hashes_expiry': dynamic_spki_hashes_expiry,
             'expiry': expiry,
             'mode': mode,
